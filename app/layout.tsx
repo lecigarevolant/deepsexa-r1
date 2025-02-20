@@ -23,10 +23,10 @@ const reckless = localFont({
 
 export const metadata: Metadata = {
   title: "Exa & Deepseek Chat App",
-  description: "An opensource chat application built with Exa for web search and Deepseek R1.",
+  description: "An opensource chat application built with Exa for web search and Deepseek R1-1776.",
   openGraph: {
     title: "Exa & Deepseek Chat App",
-    description: "An opensource chat application built with Exa for web search and Deepseek R1.",
+    description: "An opensource chat application built with Exa for web search and Deepseek R1-1776.",
     type: "website",
     locale: "en_US",
     images: [
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Exa & Deepseek Chat App",
-    description: "An opensource chat application built with Exa for web search and Deepseek R1.",
+    description: "An opensource chat application built with Exa for web search and Deepseek R1-1776.",
     images: ["https://demo.exa.ai/deepseekchat/opengraph-image.jpg"]
   },
   metadataBase: new URL("https://demo.exa.ai/deepseekchat"),

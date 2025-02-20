@@ -1,48 +1,30 @@
 'use client';
 
 import { useChat, Message } from 'ai/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
-import { getAssetPath } from './utils';
+import { getAssetPath, parseMessageContent, retryFetch } from './utils';
+import { SearchResult, WebSearchResponse, WebSearchError } from './types';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { SearchingSpinner, ThinkingSpinner } from './components/LoadingStates';
+import { ExaSearchSettings } from './api/exawebsearch/route';
+import SettingsModal from '@/components/settings-modal';
 
-interface SearchResult {
-  title: string;
-  url: string;
-  text: string;
-  author?: string;
-  publishedDate?: string;
-  favicon?: string;
+/**
+ * Main chat interface component
+ * Integrates Exa web search with Perplexity AI for contextual responses
+ */
+export default function ChatPage() {
+  return (
+    <ErrorBoundary>
+      <ChatInterface />
+    </ErrorBoundary>
+  );
 }
 
-// Add this helper function before the Page component
-const parseMessageContent = (content: string) => {
-  // If we find a complete think tag
-  if (content.includes('</think>')) {
-    const [thinking, ...rest] = content.split('</think>');
-    return {
-      thinking: thinking.replace('<think>', '').trim(),
-      finalResponse: rest.join('</think>').trim(),
-      isComplete: true
-    };
-  }
-  // If we only find opening think tag, everything after it is thinking
-  if (content.includes('<think>')) {
-    return {
-      thinking: content.replace('<think>', '').trim(),
-      finalResponse: '',
-      isComplete: false
-    };
-  }
-  // No think tags, everything is final response
-  return {
-    thinking: '',
-    finalResponse: content,
-    isComplete: true
-  };
-};
-
-export default function Page() {
+function ChatInterface() {
+  // UI state management
   const [isSearching, setIsSearching] = useState(false);
   const [isLLMLoading, setIsLLMLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -52,7 +34,40 @@ export default function Page() {
   const [isSourcesExpanded, setIsSourcesExpanded] = useState(true);
   const [loadingDots, setLoadingDots] = useState('');
   const [showModelNotice, setShowModelNotice] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [searchSettings, setSearchSettings] = useState<ExaSearchSettings>({
+    type: "auto",
+    text: true,
+    numResults: 5,
+    livecrawl: "never"
+  });
 
+  // Textarea ref for auto-resize
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  const autoResize = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+  };
+
+  // Handle input changes including auto-resize
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    handleInputChange(e);
+    autoResize();
+  };
+
+  // Handle Ctrl+Enter for submit
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      handleSubmit(e);
+    }
+  };
+
+  // Loading dots animation effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isSearching) {
@@ -67,13 +82,31 @@ export default function Page() {
     };
   }, [isSearching]);
 
+  // Initialize chat functionality using Vercel AI SDK
   const { messages, input, handleInputChange, handleSubmit: handleChatSubmit, setMessages } = useChat({
     api: getAssetPath('/api/chat'),
+    onFinish: () => {
+      console.log('Chat stream finished');
+      setIsLLMLoading(false);
+    },
+    onError: (error) => {
+      console.error('Chat stream error:', error);
+      setIsLLMLoading(false);
+      setSearchError('Failed to get response from DeepSeek');
+    }
   });
 
+  /**
+   * Handles form submission:
+   * 1. Performs web search using Exa API
+   * 2. Formats search results as context
+   * 3. Sends context + user query to Perplexity AI
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
+
+    console.log('Form submitted');
 
     // Reset states
     setIsSearching(true);
@@ -82,36 +115,45 @@ export default function Page() {
     setSearchError(null);
 
     try {
-      // First, get web search results
-      const searchResponse = await fetch(getAssetPath('/api/exawebsearch'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          query: input,
-          previousQueries: previousQueries.slice(-3)
-        }),
-      });
+      console.log('Starting web search');
+      // First, get web search results with retry logic
+      const searchResponse = await retryFetch(
+        getAssetPath('/api/exawebsearch'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            query: input,
+            previousQueries: previousQueries.slice(-3),
+            settings: searchSettings
+          }),
+        }
+      );
 
-      if (!searchResponse.ok) {
-        throw new Error('Search failed');
+      const data = await searchResponse.json() as WebSearchResponse | WebSearchError;
+      
+      if ('error' in data) {
+        throw new Error(data.error);
       }
 
-      const { results } = await searchResponse.json();
-      setSearchResults(results);
+      console.log('Search results received:', data.results.length);
+      setSearchResults(data.results);
       // Hide the notice when search results appear
       setShowModelNotice(false);
       setIsSearching(false);
       setIsLLMLoading(true);
 
       // Format search context
-      const searchContext = results.length > 0
-        ? `Web Search Results:\n\n${results.map((r: SearchResult, i: number) => 
+      const searchContext = data.results.length > 0
+        ? `Web Search Results:\n\n${data.results.map((r: SearchResult, i: number) => 
             `Source [${i + 1}]:\nTitle: ${r.title}\nURL: ${r.url}\n${r.author ? `Author: ${r.author}\n` : ''}${r.publishedDate ? `Date: ${r.publishedDate}\n` : ''}Content: ${r.text}\n---`
           ).join('\n\n')}\n\nInstructions: Based on the above search results, please provide an answer to the user's query. When referencing information, cite the source number in brackets like [1], [2], etc. Use simple english and simple words. Most important: Before coming to the final answer, think out loud, and think step by step. Think deeply, and review your steps, do 3-5 steps of thinking. Wrap the thinking in <think> tags. Start with <think> and end with </think> and then the final answer.`
         : '';
 
+      console.log('Preparing to send to chat API');
       // Send both system context and user message in one request
       if (searchContext) {
+        console.log('Adding system context');
         // First, update the messages state with both messages
         const newMessages: Message[] = [
           ...messages,
@@ -124,28 +166,34 @@ export default function Page() {
         setMessages(newMessages);
       }
 
+      console.log('Triggering chat API call');
       // Then trigger the API call
-      handleChatSubmit(e);
+      await handleChatSubmit(e);
+      console.log('Chat API call completed');
 
       // Update previous queries after successful search
       setPreviousQueries(prev => [...prev, input].slice(-3));
 
     } catch (err) {
+      console.error('Error in submission:', err);
       setSearchError(err instanceof Error ? err.message : 'Search failed');
-      console.error('Error:', err);
       setIsLLMLoading(false);
     } finally {
       setIsSearching(false);
     }
   };
 
-  // Add effect to watch for complete responses
+  // Monitor message stream for completion
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
+    console.log('Message stream updated:', lastMessage?.role, lastMessage?.content?.length);
+    
     if (lastMessage?.role === 'assistant') {
       const { isComplete } = parseMessageContent(lastMessage.content);
-      if (isComplete) {
-        setIsLLMLoading(false);
+      console.log('Message complete:', isComplete);
+      
+      if (!isComplete) {
+        setIsLLMLoading(true);
       }
     }
   }, [messages]);
@@ -154,15 +202,27 @@ export default function Page() {
     <>
       <div className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-b z-50">
         <div className="md:max-w-4xl mx-auto px-6 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <a
+              href="https://dashboard.exa.ai"
+              target="_blank"
+              className="flex items-center px-4 py-1 bg-brand-default text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+            >
+              <span>Try Exa API</span>
+            </a>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 hover:bg-gray-100 rounded-full"
+              title="Search Settings"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          </div>
           <a
-            href="https://dashboard.exa.ai"
-            target="_blank"
-            className="flex items-center px-4 py-1 bg-brand-default text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-          >
-            <span>Try Exa API</span>
-          </a>
-          <a
-            href="https://github.com/exa-labs/exa-deepseek-chat"
+            href="https://github.com/lecigarevolant/deepsexa-r1"
             target="_blank"
             className="flex items-center gap-1.5 text-md text-gray-600 hover:text-[var(--brand-default)] transition-colors"
           >
@@ -183,8 +243,8 @@ export default function Page() {
           </a>
         </div>
       </div>
-      <div className="md:max-w-4xl mx-auto p-6 pt-20 pb-24 space-y-6 bg-[var(--secondary-default)]">
-        <div className="space-y-6">
+      <div className="md:max-w-4xl mx-auto p-6 pt-20 pb-24 space-y-6 bg-[var(--secondary-default)] min-h-screen flex flex-col">
+        <div className="space-y-6 flex-1">
           {messages.filter(m => m.role !== 'system').map((message) => (
             <div key={message.id}>
               <div
@@ -303,15 +363,10 @@ export default function Page() {
                     </div>
                   )}
 
-                  {isLLMLoading && (
-                      <div className="pt-6 flex items-center gap-2 text-gray-500">
-                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span className="text-sm">DeepSeek Thinking</span>
-                      </div>
-                    )}
+                  {/* Show thinking spinner only if this is the latest message */}
+                  {isLLMLoading && message.id === messages[messages.length - 2]?.id && (
+                    <ThinkingSpinner />
+                  )}
 
                 </div>
               )}
@@ -334,30 +389,26 @@ export default function Page() {
           : 'w-full max-w-4xl mx-auto px-6 py-4'}`}>
           <form onSubmit={handleSubmit} className="flex flex-col items-center">
             <div className="flex gap-2 w-full max-w-4xl">
-              <input
-                value={input}
-                onChange={handleInputChange}
-                placeholder="Ask something..."
-                autoFocus
-                className={`flex-1 p-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--brand-default)] text-base`}
-              />
+              <div className="flex-1 relative">
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={handleTextareaChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask something... (Ctrl+Enter to send)"
+                  rows={1}
+                  className="w-full p-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--brand-default)] text-base resize-none overflow-hidden"
+                />
+              </div>
               <button 
                 type="submit"
                 disabled={!input.trim() || isSearching}
-                className="px-5 py-3 bg-[var(--brand-default)] text-white rounded-md hover:bg-[var(--brand-muted)] font-medium w-[120px]"
+                className="px-5 py-3 bg-[var(--brand-default)] text-white rounded-md hover:bg-[var(--brand-muted)] font-medium w-[120px] h-[46px] flex items-center justify-center"
               >
-                {isSearching ? (
-                  <span className="inline-flex justify-center items-center">
-                    <span>Searching</span>
-                    <span className="w-[24px] text-left">{loadingDots}</span>
-                  </span>
-                ) : (
-                  'Search'
-                )}
+                {isSearching ? <SearchingSpinner dots={loadingDots} /> : 'Search'}
               </button>
             </div>
             
-            {/* Add the notice text */}
             {showModelNotice && (
               <p className="text-xs md:text-sm text-gray-600 mt-8">
                 Switched to DeepSeek V3 model from DeepSeek R1 due to high traffic
@@ -366,6 +417,14 @@ export default function Page() {
           </form>
         </div>
       </div>
+
+      {showSettings && (
+        <SettingsModal
+          settings={searchSettings}
+          onSave={setSearchSettings}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
     </>
   );
 }

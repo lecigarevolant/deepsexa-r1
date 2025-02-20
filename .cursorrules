@@ -5,7 +5,7 @@ This is a chat app built with:
 
 It uses:
 - Exa API for web search
-- Deepseek as the LLM
+- Perplexity AI r1-1776 as the LLM
 - Vercel AI SDK
 
 Keep code simple and clean.

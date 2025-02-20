@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExaSearchSettings } from '@/app/api/exawebsearch/route';
+import { ExaSearchSettings } from '@/app/types';
 import { 
   TextContentsOptions, 
   HighlightsContentsOptions, 

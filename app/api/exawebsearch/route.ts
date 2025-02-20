@@ -66,7 +66,7 @@ function formatSearchResult(
   if (settings.text && 'text' in result) {
     parts.push(`Content: ${result.text}`);
   }
-  if (settings.highlights && 'highlights' in result) {
+  if (settings.highlights && 'highlights' in result && Array.isArray(result.highlights)) {
     parts.push(`Highlights: ${result.highlights.join('\n')}`);
   }
   if (settings.summary && 'summary' in result) {

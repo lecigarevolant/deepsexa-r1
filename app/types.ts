@@ -2,17 +2,33 @@
  * Common type definitions for the application
  */
 
+import type { 
+  TextContentsOptions,
+  HighlightsContentsOptions,
+  SummaryContentsOptions
+} from 'exa-js';
+
 export interface SearchResult {
-  title: string;
   url: string;
-  text: string;
-  author?: string;
-  publishedDate?: string;
+  title: string;
   favicon?: string;
+}
+
+export interface ExaSearchSettings {
+  type: "auto" | "keyword" | "neural";
+  numResults: number;
+  livecrawl?: "always" | "fallback" | "never";
+  
+  // Content options
+  text?: TextContentsOptions | boolean;
+  highlights?: HighlightsContentsOptions | boolean;
+  summary?: SummaryContentsOptions | boolean;
 }
 
 export interface WebSearchResponse {
   results: SearchResult[];
+  formattedResults?: string;
+  error?: string;
 }
 
 export interface WebSearchError {
@@ -37,4 +53,11 @@ export interface ChatResponse {
 
 export interface ChatError {
   error: string;
-} 
+}
+
+// Re-export types from exa-js for convenience
+export type { 
+  TextContentsOptions,
+  HighlightsContentsOptions,
+  SummaryContentsOptions
+}; 

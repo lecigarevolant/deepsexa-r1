@@ -1,6 +1,7 @@
 # 💬 Exa & Deepseek R1 1776 Chat App
 ### Powered by [Exa](https://exa.ai) - The Web Search API
 
+<br>
 
 ## 🎯 What is Deepsexa?
 
@@ -20,7 +21,7 @@ For now this app provides a cool and simple chat experience which you can clone 
 
 ## 💻 Tech Stack
 - **Search Engine**: [Exa API](https://exa.ai) - Web search API
-- **Language Model**:  R1-1776 via Perplexity
+- **Language Model**:  [R1-1776](https://huggingface.co/perplexity-ai/r1-1776) via Perplexity
 - **Frontend**: [Next.js](https://nextjs.org/docs) with App Router, [TailwindCSS](https://tailwindcss.com), TypeScript
 - **AI Integration**: [Vercel AI SDK](https://sdk.vercel.ai/docs/ai-sdk-core)
 

@@ -1,26 +1,28 @@
-# 💬 Exa & Deepseek R1 Chat App
+# 💬 Exa & Deepseek R1 1776 Chat App
 ### Powered by [Exa](https://exa.ai) - The Web Search API
 
-### Try the tool: https://demo.exa.ai/deepseekchat
 
-![Screenshot](https://exa-deepseek-chat.vercel.app/opengraph-image.jpg)
+## 🎯 What is Deepsexa?
+
+Deepsexa is a free and open-source chat app that uses Exa's API for web search and (Deepseek) R1 1776 LLM for reasoning.
 
 <br>
 
-## 🎯 What is Exa & Deepseek Chat App?
+## 🇨🇳 What is R1-1776? 
 
-Exa & Deepseek Chat App is a free and open-source chat app that uses Exa's API for web search and Deepseek R1 LLM for reasoning.
+[Perplexity](https://www.perplexity.ai/hub/blog/open-sourcing-r1-1776) have open-sourced r1-1776, which is simply deepseek-r1 with the CCP censorship scrubbed out. Not only is this much more palatable in itself, at time of creation they offer the most reliable API that is serving R1 of any kind. 
 
-This app provides a cool and simple chat experience which you can clone and build upon.
+[Exa](https://exa.ai) are killing it and I couldn't live without the original so I forked, swapped in r1-1776, and gave it a silly name. Definitely would like to build upon the combo, so stay tuned or beat me to it! 
+
+For now this app provides a cool and simple chat experience which you can clone and build upon.
 
 <br>
 
 ## 💻 Tech Stack
 - **Search Engine**: [Exa API](https://exa.ai) - Web search API
-- **Language Model**: Deepseek R1 via Fireworks AI
+- **Language Model**:  R1-1776 via Perplexity
 - **Frontend**: [Next.js](https://nextjs.org/docs) with App Router, [TailwindCSS](https://tailwindcss.com), TypeScript
 - **AI Integration**: [Vercel AI SDK](https://sdk.vercel.ai/docs/ai-sdk-core)
-- **Hosting**: [Vercel](https://vercel.com/)
 
 <br>
 
@@ -29,7 +31,7 @@ This app provides a cool and simple chat experience which you can clone and buil
 ### Prerequisites
 - Node.js
 - Exa API key
-- Fireworks AI API key (For Deepseek R1)
+- Perplexity API key (For Deepseek R1)
 
 ### Installation
 
@@ -44,14 +46,14 @@ cd exa-deepseek-chat
 npm install
 ```
 
-3. Set up environment variables (for Exa and Fireworks)
+3. Set up environment variables (for Exa and Perplexity)
 
 4. Run the development server
 ```bash
 npm run dev
 ```
 
-5. Open http://localhost:3000/deepseekchat in your browser
+5. Open http://localhost:3000/deepsexa in your browser
 
 <br>
 
@@ -59,7 +61,7 @@ npm run dev
 
 ### Required API Keys
 * **Exa API Key**: Get from [Exa Dashboard](https://dashboard.exa.ai/api-keys)
-* **Deepseek API Key (From Fireworks AI)**: Get from your [Fireworks Dashboard](https://app.fireworks.ai/api-keys)
+* **Perplexity API Key**: Get from your [Perplexity Dashboard](https://www.perplexity.ai/settings/api)
 
 <br>
 
@@ -77,4 +79,4 @@ This project is powered by [Exa.ai](https://exa.ai), a web search API designed s
 
 ---
 
-Built with ❤️ by the Exa team
+(Mostly) Built with ❤️ by the Exa team 

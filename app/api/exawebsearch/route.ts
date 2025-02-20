@@ -11,6 +11,7 @@ import Exa, {
   SearchResult
 } from "exa-js";
 import { logger } from '@/app/utils/logger';
+import { DEFAULT_SEARCH_SETTINGS } from '@/app/constants/api';
 
 // Set maximum execution time to 1 minute
 export const maxDuration = 60;
@@ -83,7 +84,7 @@ function formatSearchResult(
  */
 export async function POST(req: NextRequest) {
   try {
-    const { query, previousQueries = [], settings = defaultSettings } = await req.json();
+    const { query, previousQueries = [], settings = DEFAULT_SEARCH_SETTINGS } = await req.json();
     if (!query) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }

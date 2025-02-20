@@ -7,9 +7,10 @@ import { perplexity } from '@ai-sdk/perplexity';
 import { streamText } from 'ai';
 import { Message } from 'ai/react';
 import { logger } from '@/app/utils/logger';
+import { CHAT_MAX_DURATION, MAX_PROMPT_LENGTH, SEARCH_ANSWER_TEMPLATE } from '@/app/constants/api';
 
 // Set maximum execution time to 5 minutes
-export const maxDuration = 300;
+export const maxDuration = CHAT_MAX_DURATION;
 
 // Initialize Perplexity AI model
 const model = perplexity('r1-1776')
@@ -32,9 +33,6 @@ When responding, please keep the following points in mind:
 # The user's message is:
 {question}
 Start your response with "<think>\\n"`;
-
-// Add at top level
-const MAX_PROMPT_LENGTH = 16384; // DeepSeek's typical context limit
 
 /**
  * POST handler for chat requests
@@ -79,10 +77,8 @@ export async function POST(req: Request) {
     const currentQuestion = messages[messages.length-1].content;
 
     // Combine everything into the final prompt
-    const combinedPrompt = `${formattedHistory}${formattedHistory.length > 0 ? '\n\n' : ''}${search_answer_en_template
-      .replace('{search_results}', searchContext || "No search results were found")
-      .replace('{cur_date}', currentDate)
-      .replace('{question}', currentQuestion)}`;
+    const combinedPrompt = `${formattedHistory}
+${formattedHistory.length > 0 ? '\n' : ''}${SEARCH_ANSWER_TEMPLATE.replace('{search_results}', searchContext || "No search results were found").replace('{cur_date}', currentDate).replace('{question}', currentQuestion)}`;
 
     // After constructing combinedPrompt
     const promptLength = combinedPrompt.length;

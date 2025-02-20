@@ -8,7 +8,7 @@ Deepsexa is a free and open-source chat app that uses Exa's API for web search a
 
 <br>
 
-## 🇨🇳 What is R1-1776? 
+## What is R1-1776? 
 
 [Perplexity](https://www.perplexity.ai/hub/blog/open-sourcing-r1-1776) have open-sourced r1-1776, which is simply deepseek-r1 with the CCP censorship scrubbed out. Not only is this much more palatable in itself, at time of creation they offer the most reliable API that is serving R1 of any kind. 
 

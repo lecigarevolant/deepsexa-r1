@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import { ExaSearchSettings } from '@/app/api/exawebsearch/route';
+import { 
+  TextContentsOptions, 
+  HighlightsContentsOptions, 
+  SummaryContentsOptions 
+} from 'exa-js';
 
 interface SettingsModalProps {
   settings: ExaSearchSettings;
@@ -55,15 +60,95 @@ export default function SettingsModal({ settings, onSave, onClose }: SettingsMod
               <option value="always">Always</option>
             </select>
           </div>
+        </div>
+
+        <div className="space-y-4 mt-4 border-t pt-4">
+          <h3 className="font-medium">Content Settings</h3>
+          
+          <div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={!!formData.text}
+                onChange={e => setFormData(prev => ({ 
+                  ...prev, 
+                  text: e.target.checked ? { maxCharacters: 2000, includeHtmlTags: false } : false 
+                }))}
+                id="text"
+              />
+              <label htmlFor="text" className="text-sm">Include Text Content</label>
+            </div>
+            
+            {formData.text && typeof formData.text === 'object' && (
+              <div className="ml-6 mt-2 space-y-2">
+                <div>
+                  <label className="text-sm">Max Characters</label>
+                  <input
+                    type="number"
+                    value={formData.text.maxCharacters}
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      text: {
+                        ...prev.text as TextContentsOptions,
+                        maxCharacters: parseInt(e.target.value)
+                      }
+                    }))}
+                    className="w-full border rounded p-1 text-sm"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={!!formData.highlights}
+                onChange={e => setFormData(prev => ({
+                  ...prev,
+                  highlights: e.target.checked ? {
+                    numSentences: 3,
+                    highlightsPerUrl: 2
+                  } : false
+                }))}
+                id="highlights"
+              />
+              <label htmlFor="highlights" className="text-sm">Include Highlights</label>
+            </div>
+
+            {formData.highlights && typeof formData.highlights === 'object' && (
+              <div className="ml-6 mt-2 space-y-2">
+                <div>
+                  <label className="text-sm">Sentences per Highlight</label>
+                  <input
+                    type="number"
+                    value={formData.highlights.numSentences}
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      highlights: {
+                        ...prev.highlights as HighlightsContentsOptions,
+                        numSentences: parseInt(e.target.value)
+                      }
+                    }))}
+                    className="w-full border rounded p-1 text-sm"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              checked={formData.text}
-              onChange={e => setFormData(prev => ({ ...prev, text: e.target.checked }))}
-              id="text"
+              checked={!!formData.summary}
+              onChange={e => setFormData(prev => ({
+                ...prev,
+                summary: e.target.checked ? {} : false
+              }))}
+              id="summary"
             />
-            <label htmlFor="text" className="text-sm">Include Text Content</label>
+            <label htmlFor="summary" className="text-sm">Include Summary</label>
           </div>
         </div>
 

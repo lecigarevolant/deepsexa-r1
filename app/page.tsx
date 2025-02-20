@@ -85,6 +85,7 @@ function ChatInterface() {
   // Initialize chat functionality using Vercel AI SDK
   const { messages, input, handleInputChange, handleSubmit: handleChatSubmit, setMessages } = useChat({
     api: getAssetPath('/api/chat'),
+    body: { searchContext: '' },
     onFinish: () => {
       console.log('Chat stream finished');
       setIsLLMLoading(false);
@@ -117,23 +118,20 @@ function ChatInterface() {
     try {
       console.log('Starting web search');
       // First, get web search results with retry logic
-      const searchResponse = await retryFetch(
-        getAssetPath('/api/exawebsearch'),
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            query: input,
-            previousQueries: previousQueries.slice(-3),
-            settings: searchSettings
-          }),
-        }
-      );
+      const response = await fetch('/deepseekchat/api/exawebsearch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          query: input,
+          previousQueries: previousQueries.slice(-3),
+          settings: searchSettings 
+        })
+      });
 
-      const data = await searchResponse.json() as WebSearchResponse | WebSearchError;
-      
-      if ('error' in data) {
-        throw new Error(data.error);
+      const data = await response.json();
+      if (data.error) {
+        console.error('Search error:', data.error);
+        return;
       }
 
       console.log('Search results received:', data.results.length);
@@ -143,32 +141,12 @@ function ChatInterface() {
       setIsSearching(false);
       setIsLLMLoading(true);
 
-      // Format search context
-      const searchContext = data.results.length > 0
-        ? `Web Search Results:\n\n${data.results.map((r: SearchResult, i: number) => 
-            `Source [${i + 1}]:\nTitle: ${r.title}\nURL: ${r.url}\n${r.author ? `Author: ${r.author}\n` : ''}${r.publishedDate ? `Date: ${r.publishedDate}\n` : ''}Content: ${r.text}\n---`
-          ).join('\n\n')}\n\nInstructions: Based on the above search results, please provide an answer to the user's query. When referencing information, cite the source number in brackets like [1], [2], etc. Use simple english and simple words. Most important: Before coming to the final answer, think out loud, and think step by step. Think deeply, and review your steps, do 3-5 steps of thinking. Wrap the thinking in <think> tags. Start with <think> and end with </think> and then the final answer.`
-        : '';
-
-      console.log('Preparing to send to chat API');
-      // Send both system context and user message in one request
-      if (searchContext) {
-        console.log('Adding system context');
-        // First, update the messages state with both messages
-        const newMessages: Message[] = [
-          ...messages,
-          {
-            id: Date.now().toString(),
-            role: 'system',
-            content: searchContext
-          }
-        ];
-        setMessages(newMessages);
-      }
+      // Use the pre-formatted results string
+      const searchContext = data.formattedResults || '';
 
       console.log('Triggering chat API call');
-      // Then trigger the API call
-      await handleChatSubmit(e);
+      // Update useChat body with new searchContext
+      await handleChatSubmit(e, { body: { searchContext } });
       console.log('Chat API call completed');
 
       // Update previous queries after successful search

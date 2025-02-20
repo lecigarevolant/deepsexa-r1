@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^0.1.6",
-    "@ai-sdk/fireworks": "^0.1.6",
+    "@ai-sdk/perplexity": "^1.0.1",
     "@vercel/analytics": "^1.4.1",
-    "ai": "^4.1.10",
+    "ai": "^4.1.44",
     "exa-js": "^1.4.8",
     "next": "14.2.17",
     "react": "^18",
@@ -28,5 +28,8 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
+  },
+  "resolutions": {
+    "@ai-sdk/provider": "<version number from npm ls>"
   }
 }

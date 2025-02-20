@@ -33,7 +33,7 @@ export function useSearch(): UseSearchReturn {
     setSearchError(null);
 
     try {
-      const response = await fetch('/deepseekchat/api/exawebsearch', {
+      const response = await fetch('/deepsexa/api/exawebsearch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-    basePath: "/deepseekchat"
+    basePath: "/deepsexa"
 };
   
 export default nextConfig;

@@ -6,7 +6,7 @@
  * Gets the asset path with the correct base URL prefix
  */
 export const getAssetPath = (path: string): string => {
-  return `/deepseekchat${path}`;
+  return `/deepsexa${path}`;
 };
 
 /**

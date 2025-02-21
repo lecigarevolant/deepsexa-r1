@@ -15,6 +15,7 @@ export interface SearchResult {
 }
 
 export interface ExaSearchSettings {
+  // Basic Settings
   type: "auto" | "keyword" | "neural";
   numResults: number;
   livecrawl?: "always" | "fallback" | "never";
@@ -23,6 +24,20 @@ export interface ExaSearchSettings {
   text?: TextContentsOptions | boolean;
   highlights?: HighlightsContentsOptions | boolean;
   summary?: SummaryContentsOptions | boolean;
+
+  // Custom Model Mode
+  customModelMode?: boolean;
+
+  // Advanced Settings (Not Tested)
+  useAutoprompt?: boolean;
+  includeDomains?: string[];
+  excludeDomains?: string[];
+  startPublishedDate?: string;  // ISO 8601
+  endPublishedDate?: string;    // ISO 8601
+  startCrawlDate?: string;      // ISO 8601
+  endCrawlDate?: string;        // ISO 8601
+  category?: "research_paper" | "news" | "blog" | "social_media" | "discussion" | "other";
+  highlightQuery?: string;
 }
 
 export interface WebSearchResponse {

@@ -19,7 +19,7 @@ const model = perplexity('r1-1776')
 const search_answer_en_template = `
 # The following contents are the search results related to the user's message:
 {search_results}
-In the search results I provide to you, each result is formatted as [webpage X begin]...[webpage X end], where X represents the numerical index of each article. Please cite the context at the end of the relevant sentence when appropriate. Use the citation format [citation:X] in the corresponding part of your answer. If a sentence is derived from multiple contexts, list all relevant citation numbers, such as [citation:3][citation:5]. Be sure not to cluster all citations at the end; instead, include them in the corresponding parts of the answer.
+In the search results I provide to you, each result is formatted as [webpage X begin]...[webpage X end], where X represents the numerical index of each article. Each result includes a title, URL, published date, and summary. Please consider the publication dates when evaluating the relevance and timeliness of information. Please cite the context at the end of the relevant sentence when appropriate. Use the citation format [citation:X] in the corresponding part of your answer. If a sentence is derived from multiple contexts, list all relevant citation numbers, such as [citation:3][citation:5]. Be sure not to cluster all citations at the end; instead, include them in the corresponding parts of the answer.
 When responding, please keep the following points in mind:
 - Today is {cur_date}.
 - Not all content in the search results is closely related to the user's question. You need to evaluate and filter the search results based on the question.
@@ -91,12 +91,37 @@ ${formattedHistory.length > 0 ? '\n' : ''}${SEARCH_ANSWER_TEMPLATE.replace('{sea
     logger.log('\n=== Perplexity API Call ===');
     logger.logObject('Final Prompt', combinedPrompt);
 
+    // Parse the structured summaries if available
+    let structuredContext = '';
+    if (searchContext) {
+      try {
+        const summaries = JSON.parse(searchContext);
+        if (Array.isArray(summaries)) {
+          structuredContext = summaries.map((summary, i) => {
+            const { metadata, summary: content, relevance } = summary;
+            return `[webpage ${i + 1} begin]
+Title: ${metadata.title}
+URL: ${metadata.url}
+Published: ${metadata.publishedDate}
+Relevance Score: ${relevance.queryRelevance}/10
+Timeliness: ${relevance.timelinessScore}/10
+Context Connection: ${relevance.conversationFlow}
+Summary: ${content}
+[webpage ${i + 1} end]`;
+          }).join('\n\n');
+        }
+      } catch (e) {
+        // If parsing fails, use the original searchContext
+        structuredContext = searchContext;
+      }
+    }
+
     const result = await streamText({
       model,
       messages: [
         {
           role: 'user', 
-          content: combinedPrompt
+          content: combinedPrompt.replace(searchContext, structuredContext || "No search results were found")
         }
       ]
     });

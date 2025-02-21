@@ -35,9 +35,9 @@ export interface ExaSearchSettings {
 const defaultSettings: ExaSearchSettings = {
   type: "auto",
   numResults: 5,
-  livecrawl: "never",
+  livecrawl: "always",
   text: {
-    maxCharacters: 2000,
+    maxCharacters: 10000,
     includeHtmlTags: false
   },
   highlights: false,

@@ -4,16 +4,30 @@ export const MAX_PROMPT_LENGTH = 16384; // DeepSeek's typical context limit
 
 // Search settings
 export const DEFAULT_SEARCH_SETTINGS = {
-  type: "auto" as const,
-  numResults: 5,
-  livecrawl: "never" as const,
-  text: {
-    maxCharacters: 2000,
-    includeHtmlTags: false
-  },
-  highlights: false,
-  summary: false
-};
+  // Basic Recommended Settings
+  type: "auto" as const,      // Auto mode lets Exa choose between neural/keyword based on query
+  numResults: 10,             // 10 results provides good coverage without overwhelming the model
+  livecrawl: "always" as const, // Always attempt live crawling for fresh content
+  
+  // Content Settings
+  text: false,               // Disabled by default to reduce token usage. When enabled, recommended at 10000 chars
+  highlights: false,         // Disabled by default, enable if you need specific sentence highlights
+  summary: true,             // Enabled by default for concise content overview
+
+  // Custom Model Mode
+  customModelMode: false,    // Disabled by default, when enabled uses OpenAI for summarization
+
+  // Advanced Settings (Not Tested)
+  useAutoprompt: true,       // Let Exa optimize the query format
+  includeDomains: [],        // No domain restrictions by default
+  excludeDomains: [],        // No domain exclusions by default
+  startPublishedDate: undefined,
+  endPublishedDate: undefined,
+  startCrawlDate: undefined,
+  endCrawlDate: undefined,
+  category: undefined,       // No category filtering by default
+  highlightQuery: undefined  // No custom highlight query by default
+} as const;
 
 // Search response template
 export const SEARCH_ANSWER_TEMPLATE = `

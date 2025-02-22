@@ -8,19 +8,17 @@ import { ExaSearchSettings } from "@/app/api/exawebsearch/route";
 export const DEFAULT_SEARCH_SETTINGS: ExaSearchSettings = {
   // Basic Recommended Settings
   type: "auto",
-  numResults: 5,
+  numResults: 8,
   livecrawl: "always",
 
   // Content Settings
+  customModelMode: true,
   text: {
     maxCharacters: 10000,
     includeHtmlTags: false,
   },
   highlights: false,
   summary: false,
-
-  // Custom Model Mode
-  customModelMode: false,
 
   // Advanced Settings (Not Tested)
   useAutoprompt: true,

@@ -48,8 +48,9 @@ export interface ExaSearchSettings {
 // Default settings
 const defaultSettings: ExaSearchSettings = {
   type: "auto",
-  numResults: 5,
+  numResults: 8,
   livecrawl: "always",
+  customModelMode: true,
   text: {
     maxCharacters: 10000,
     includeHtmlTags: false,

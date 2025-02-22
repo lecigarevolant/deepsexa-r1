@@ -15,7 +15,21 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ settings, onSave, onClose }: SettingsModalProps) {
-  const [formData, setFormData] = useState<ExaSearchSettings>(settings);
+  // Use defaults only if no settings provided
+  const initialSettings: ExaSearchSettings = settings || {
+    type: "auto",
+    numResults: 8,
+    livecrawl: "always",
+    customModelMode: true,
+    text: {
+      maxCharacters: 10000,
+      includeHtmlTags: false,
+    },
+    highlights: false,
+    summary: false
+  };
+
+  const [formData, setFormData] = useState<ExaSearchSettings>(initialSettings);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
@@ -75,10 +89,9 @@ export default function SettingsModal({ settings, onSave, onClose }: SettingsMod
                   onChange={e => setFormData(prev => ({ 
                     ...prev, 
                     customModelMode: e.target.checked,
-                    // When custom mode is enabled, force text to true and disable highlights/summary
-                    text: e.target.checked ? { maxCharacters: 10000, includeHtmlTags: false } : prev.text,
-                    highlights: e.target.checked ? false : prev.highlights,
-                    summary: e.target.checked ? false : prev.summary
+                    text: e.target.checked ? { maxCharacters: 10000, includeHtmlTags: false } : false,
+                    highlights: false,
+                    summary: !e.target.checked // Set summary to true when custom mode is disabled
                   }))}
                   id="customMode"
                 />
@@ -91,15 +104,18 @@ export default function SettingsModal({ settings, onSave, onClose }: SettingsMod
                 <div>
                   <div className="flex items-center gap-2">
                     <input
-                      type="checkbox"
+                      type="radio"
+                      name="contentType"
                       checked={!!formData.text}
-                      onChange={e => setFormData(prev => ({ 
+                      onChange={() => setFormData(prev => ({ 
                         ...prev, 
-                        text: e.target.checked ? { maxCharacters: 2000, includeHtmlTags: false } : false 
+                        text: { maxCharacters: 10000, includeHtmlTags: false },
+                        highlights: false,
+                        summary: false
                       }))}
                       id="text"
                     />
-                    <label htmlFor="text" className="text-sm">Include Text Content</label>
+                    <label htmlFor="text" className="text-sm">Text Content</label>
                   </div>
                   
                   {formData.text && typeof formData.text === 'object' && (
@@ -125,15 +141,18 @@ export default function SettingsModal({ settings, onSave, onClose }: SettingsMod
                 <div>
                   <div className="flex items-center gap-2">
                     <input
-                      type="checkbox"
+                      type="radio"
+                      name="contentType"
                       checked={!!formData.highlights}
-                      onChange={e => setFormData(prev => ({
+                      onChange={() => setFormData(prev => ({
                         ...prev,
-                        highlights: e.target.checked ? { numSentences: 3 } : false
+                        highlights: { numSentences: 10 },
+                        text: false,
+                        summary: false
                       }))}
                       id="highlights"
                     />
-                    <label htmlFor="highlights" className="text-sm">Include Highlights</label>
+                    <label htmlFor="highlights" className="text-sm">Highlights</label>
                   </div>
 
                   {formData.highlights && typeof formData.highlights === 'object' && (
@@ -142,7 +161,7 @@ export default function SettingsModal({ settings, onSave, onClose }: SettingsMod
                       <input
                         type="number"
                         min="1"
-                        max="5"
+                        max="10"
                         value={formData.highlights.numSentences}
                         onChange={e => setFormData(prev => ({
                           ...prev,
@@ -158,15 +177,18 @@ export default function SettingsModal({ settings, onSave, onClose }: SettingsMod
 
                 <div className="flex items-center gap-2">
                   <input
-                    type="checkbox"
+                    type="radio"
+                    name="contentType"
                     checked={!!formData.summary}
-                    onChange={e => setFormData(prev => ({
+                    onChange={() => setFormData(prev => ({
                       ...prev,
-                      summary: e.target.checked
+                      summary: true,
+                      text: false,
+                      highlights: false
                     }))}
                     id="summary"
                   />
-                  <label htmlFor="summary" className="text-sm">Include Summary</label>
+                  <label htmlFor="summary" className="text-sm">Summary</label>
                 </div>
               </>
             )}

@@ -7,5 +7,6 @@ It uses:
 - Exa API for web search
 - Perplexity AI r1-1776 as the LLM
 - Vercel AI SDK
+- Homepage is at http://localhost:3000/deepsexa
 
 Keep code simple and clean.

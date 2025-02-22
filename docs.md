@@ -101,13 +101,13 @@ The application exposes two main API routes:
     *   **Purpose:**  Processes user messages, integrates search results, and streams responses from the Deepseek R1-1776 model.
     *   **Request Body:**
         *   `messages`: An array of message objects (`app/types.ts` `ChatMessage` interface). Each message has `id`, `role` (`user`, `assistant`, or `system`), and `content`.
-        *   `searchContext`: A string containing formatted search results obtained from the `/api/exawebsearch` route.
+        *   `searchContext`: A string containing formatted search results obtained from the `deepsexa/api/exawebsearch` route.
     *   **Response:** A streamed text response from the Deepseek R1-1776 model. The stream includes reasoning steps (`<think>...</think>`) and the final response.
     *   **Error Handling:** Returns a JSON response with an `error` message and `details` if an error occurs.
     *   **Implementation:** `app/api/chat/route.ts`
     *	**Max Duration**: The maximum execution time for this route is set by `CHAT_MAX_DURATION` and is currently 300 seconds (5 minutes) defined in `app/constants/api.ts`.
 
-2.  **`/api/exawebsearch` (POST):** Performs web searches using the Exa API.
+2.  **`deepsexa/api/exawebsearch` (POST):** Performs web searches using the Exa API.
     *   **Purpose:**  Conducts contextual web searches based on the user's query and previous queries.
     *   **Request Body:**
         *   `query`: The user's current search query (string).

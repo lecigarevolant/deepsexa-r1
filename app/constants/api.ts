@@ -3,30 +3,35 @@ export const CHAT_MAX_DURATION = 300; // 5 minutes
 export const MAX_PROMPT_LENGTH = 16384; // DeepSeek's typical context limit
 
 // Search settings
-export const DEFAULT_SEARCH_SETTINGS = {
+import { ExaSearchSettings } from "@/app/api/exawebsearch/route";
+
+export const DEFAULT_SEARCH_SETTINGS: ExaSearchSettings = {
   // Basic Recommended Settings
-  type: "auto" as const,      // Auto mode lets Exa choose between neural/keyword based on query
-  numResults: 10,             // 10 results provides good coverage without overwhelming the model
-  livecrawl: "always" as const, // Always attempt live crawling for fresh content
-  
+  type: "auto",
+  numResults: 5,
+  livecrawl: "always",
+
   // Content Settings
-  text: false,               // Disabled by default to reduce token usage. When enabled, recommended at 10000 chars
-  highlights: false,         // Disabled by default, enable if you need specific sentence highlights
-  summary: true,             // Enabled by default for concise content overview
+  text: {
+    maxCharacters: 10000,
+    includeHtmlTags: false,
+  },
+  highlights: false,
+  summary: false,
 
   // Custom Model Mode
-  customModelMode: false,    // Disabled by default, when enabled uses OpenAI for summarization
+  customModelMode: false,
 
   // Advanced Settings (Not Tested)
-  useAutoprompt: true,       // Let Exa optimize the query format
-  includeDomains: [],        // No domain restrictions by default
-  excludeDomains: [],        // No domain exclusions by default
+  useAutoprompt: true,
+  includeDomains: [],
+  excludeDomains: [],
   startPublishedDate: undefined,
   endPublishedDate: undefined,
   startCrawlDate: undefined,
   endCrawlDate: undefined,
-  category: undefined,       // No category filtering by default
-  highlightQuery: undefined  // No custom highlight query by default
+  category: undefined,
+  highlightQuery: undefined,
 } as const;
 
 // Search response template
@@ -46,4 +51,4 @@ When responding, please keep the following points in mind:
 - Unless the user requests otherwise, your response should be in the same language as the user's question.
 # The user's message is:
 {question}
-Start your response with "<think>\\n"`; 
+Start your response with "<think>\\n"`;

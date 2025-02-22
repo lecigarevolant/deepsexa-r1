@@ -10,6 +10,9 @@ import { ChatMessage } from './components/chat/ChatMessage';
 import { SearchResults } from './components/chat/SearchResults';
 import { ChatInput } from './components/chat/ChatInput';
 import SettingsModal from '@/components/settings-modal';
+import { SearchFormData } from './types/search';
+import { ExaSearchSettings } from './api/exawebsearch/route';
+import { DEFAULT_SEARCH_SETTINGS } from './constants/api';
 
 /**
  * Main chat interface component
@@ -29,26 +32,19 @@ function ChatInterface() {
   const [isSourcesExpanded, setIsSourcesExpanded] = useState(true);
   const [showModelNotice, setShowModelNotice] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchSettings, setSearchSettings] = useState<ExaSearchSettings>(DEFAULT_SEARCH_SETTINGS);
 
   // Custom hooks
-  const { 
-    isSearching, 
-    searchResults, 
-    searchError, 
-    searchSettings, 
-    setSearchSettings, 
-    performSearch, 
-    resetSearch 
-  } = useSearch();
-
+  const { search, isLoading: isSearching, error: searchError } = useSearch();
   const {
     messages,
     input,
     handleInputChange,
     handleSubmit: handleChatSubmit,
     isLLMLoading,
-    setMessages
-  } = useChatLogic(searchResults, resetSearch);
+    setMessages,
+  } = useChatLogic(searchResults, () => setSearchResults([]));
 
   const loadingDots = useLoadingDots(isSearching);
   const { previousQueries, addQuery } = usePreviousQueries();
@@ -57,12 +53,15 @@ function ChatInterface() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    resetSearch();
-    const searchData = await performSearch(input, previousQueries);
+    setSearchResults([]);
+    const searchData = await search({ query: input, autoDate: true }, previousQueries);
     if (!searchData) return;
 
+    setSearchResults(searchData.results);
     setShowModelNotice(false);
-    await handleChatSubmit(e, { body: { searchContext: searchData.formattedResults || '' } });
+    await handleChatSubmit(e, {
+      body: { searchContext: searchData.formattedResults || "" },
+    });
     addQuery(input);
   };
 

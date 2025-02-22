@@ -1,114 +1,77 @@
-import { useState, useCallback } from 'react';
-import { ExaSearchSettings, SearchResult } from '../types';
+import { useState } from "react";
+import { SearchFormData } from "@/app/types/search";
+import { ExaSearchSettings } from "@/app/api/exawebsearch/route";
+import { DEFAULT_SEARCH_SETTINGS } from "@/app/constants/api";
 
-interface UseSearchReturn {
-  isSearching: boolean;
-  searchResults: SearchResult[];
-  searchError: string | null;
-  searchSettings: ExaSearchSettings;
-  setSearchSettings: (settings: ExaSearchSettings) => void;
-  performSearch: (query: string, previousQueries: string[]) => Promise<{ formattedResults?: string } | undefined>;
-  resetSearch: () => void;
-}
+export function useSearch() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export function useSearch(): UseSearchReturn {
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [searchSettings, setSearchSettings] = useState<ExaSearchSettings>({
-    type: "auto",
-    text: true,
-    numResults: 5,
-    livecrawl: "never",
-    customModelMode: false
-  });
-
-  const resetSearch = useCallback(() => {
-    setIsSearching(false);
-    setSearchResults([]);
-    setSearchError(null);
-  }, []);
-
-  const performSearch = useCallback(async (query: string, previousQueries: string[]) => {
-    setIsSearching(true);
-    setSearchError(null);
+  const search = async (
+    formData: SearchFormData,
+    previousQueries: string[] = []
+  ) => {
+    setIsLoading(true);
+    setError(null);
 
     try {
-      // First get search results from Exa
-      const response = await fetch('/deepsexa/api/exawebsearch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query,
-          previousQueries: previousQueries.slice(-3),
-          settings: searchSettings
-        })
-      });
+      // If autoDate is enabled, get date range from OpenAI
+      let settings = { ...DEFAULT_SEARCH_SETTINGS };
 
-      const data = await response.json();
-      if (data.error) {
-        console.error('Search error:', data.error);
-        setSearchError(data.error);
-        return;
-      }
+      if (formData.autoDate) {
+        const dateResponse = await fetch("deepsexa/api/parse-date", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: formData.query,
+            previousQueries,
+          }),
+        });
 
-      console.log('Search results received:', data.results.length);
-      setSearchResults(data.results);
+        if (!dateResponse.ok) {
+          throw new Error("Failed to parse date range");
+        }
 
-      // If custom model mode is enabled, summarize the text content
-      if (searchSettings.customModelMode && data.results.length > 0) {
-        try {
-          // Process each webpage individually
-          const summaries = await Promise.all(data.results.map(async (result: any, i: number) => {
-            const webpageContent = `Previous Queries: ${previousQueries.join(', ')}\nTitle: ${result.title || 'No title'}\nURL: ${result.url}\nPublished: ${result.publishedDate || 'Date unknown'}\nContent: ${result.text || ''}`;
-            
-            const summaryResponse = await fetch('deepsexa/api/summarize/openai', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                text: webpageContent,
-                query: query,
-                previousQueries: previousQueries
-              })
-            });
+        const dateRange = await dateResponse.json();
 
-            if (!summaryResponse.ok) {
-              throw new Error(`Failed to summarize webpage ${i + 1}`);
-            }
-
-            const summaryData = await summaryResponse.json();
-            return summaryData.summary;
-          }));
-
-          // Format the final results with individual summaries
-          const formattedResults = data.results.map((r: any, i: number) => 
-            `[webpage ${i + 1} begin]\nTitle: ${r.title || 'No title'}\nURL: ${r.url}\nPublished: ${r.publishedDate || 'Date unknown'}\nSummary: ${summaries[i] || 'No summary available'}\n[webpage ${i + 1} end]`
-          ).join('\n\n');
-
-          return { ...data, formattedResults };
-        } catch (err) {
-          console.error('Summarization error:', err);
-          throw new Error('Failed to summarize content');
+        // Apply the date range to settings if dates were detected
+        if (dateRange.dateRange.startDate || dateRange.dateRange.endDate) {
+          settings = {
+            ...settings,
+            startPublishedDate: dateRange.dateRange.startDate,
+            endPublishedDate: dateRange.dateRange.endDate,
+          };
         }
       }
 
+      // Perform the search with the updated settings
+      const searchResponse = await fetch("deepsexa/api/exawebsearch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: formData.query,
+          previousQueries,
+          settings,
+        }),
+      });
+
+      if (!searchResponse.ok) {
+        throw new Error("Search failed");
+      }
+
+      const data = await searchResponse.json();
       return data;
-
     } catch (err) {
-      console.error('Error in search:', err);
-      setSearchError(err instanceof Error ? err.message : 'Search failed');
+      setError(err instanceof Error ? err.message : "An error occurred");
+      return null;
     } finally {
-      setIsSearching(false);
+      setIsLoading(false);
     }
-  }, [searchSettings]);
-
-  return { 
-    isSearching, 
-    searchResults, 
-    searchError, 
-    searchSettings, 
-    setSearchSettings, 
-    performSearch, 
-    resetSearch 
   };
-} 
+
+  return {
+    search,
+    isLoading,
+    error,
+  };
+}

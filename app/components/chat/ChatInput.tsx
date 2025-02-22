@@ -1,3 +1,7 @@
+import { useState } from 'react';
+import { Toggle } from "@/app/components/ui/toggle";
+import { CalendarClock } from "lucide-react";
+import { SearchFormData } from '@/app/types/search';
 import { SearchingSpinner } from '../LoadingStates';
 import { useAutoResizeTextarea } from '../../hooks/useAutoResizeTextarea';
 
@@ -7,7 +11,7 @@ interface ChatInputProps {
   onSubmit: (e: React.FormEvent) => void;
   isSearching: boolean;
   loadingDots: string;
-  showModelNotice?: boolean;
+  showModelNotice: boolean;
   messageCount: number;
 }
 
@@ -17,15 +21,28 @@ export function ChatInput({
   onSubmit,
   isSearching,
   loadingDots,
-  showModelNotice = false,
+  showModelNotice,
   messageCount
 }: ChatInputProps) {
+  const [autoDate, setAutoDate] = useState(false);
   const { textareaRef, handleTextareaChange } = useAutoResizeTextarea();
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      onSubmit(e);
+      handleSubmit(e);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    const formData: SearchFormData = {
+      query: input.trim(),
+      autoDate
+    };
+
+    onSubmit(e);
   };
 
   return (
@@ -35,7 +52,7 @@ export function ChatInput({
       <div className={`${messageCount === 0 
         ? 'w-full max-w-2xl mx-auto px-6' 
         : 'w-full max-w-4xl mx-auto px-6 py-4'}`}>
-        <form onSubmit={onSubmit} className="flex flex-col items-center">
+        <form onSubmit={handleSubmit} className="flex flex-col items-center">
           <div className="flex gap-2 w-full max-w-4xl">
             <div className="flex-1 relative">
               <textarea
@@ -45,8 +62,19 @@ export function ChatInput({
                 onKeyDown={handleKeyDown}
                 placeholder="Ask something... (Ctrl+Enter to send)"
                 rows={1}
-                className="w-full p-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--brand-default)] text-base resize-none overflow-hidden"
+                className="w-full p-3 pr-24 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--brand-default)] text-base resize-none overflow-hidden"
               />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <Toggle
+                  size="sm"
+                  pressed={autoDate}
+                  onPressedChange={setAutoDate}
+                  className="bg-transparent hover:bg-gray-100 data-[state=on]:bg-brand-default data-[state=on]:text-white"
+                  title="Auto-detect date range"
+                >
+                  <CalendarClock className="h-4 w-4" />
+                </Toggle>
+              </div>
             </div>
             <button 
               type="submit"
@@ -57,9 +85,9 @@ export function ChatInput({
             </button>
           </div>
           
-          {showModelNotice && (
+          {showModelNotice && messageCount === 0 && (
             <p className="text-xs md:text-sm text-gray-600 mt-8">
-              Switched to DeepSeek V3 model from DeepSeek R1 due to high traffic
+              Using Perplexity AI r1-1776 model
             </p>
           )}
         </form>

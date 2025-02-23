@@ -11,7 +11,7 @@ import { SearchResults } from './components/chat/SearchResults';
 import { ChatInput } from './components/chat/ChatInput';
 import SettingsModal from '@/components/settings-modal';
 import { SearchFormData } from './types/search';
-import { ExaSearchSettings } from './api/exawebsearch/route';
+import { ExaSearchSettings, SearchResult } from './types';
 import { DEFAULT_SEARCH_SETTINGS } from './constants/api';
 
 /**
@@ -34,6 +34,9 @@ function ChatInterface() {
   const [showSettings, setShowSettings] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchSettings, setSearchSettings] = useState<ExaSearchSettings>(DEFAULT_SEARCH_SETTINGS);
+  const [dateRange, setDateRange] = useState<{ startDate: string | null; endDate: string | null; } | undefined>();
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Custom hooks
   const { search, isLoading: isSearching, error: searchError } = useSearch();
@@ -51,18 +54,91 @@ function ChatInterface() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
-    setSearchResults([]);
-    const searchData = await search({ query: input, autoDate: true }, previousQueries);
-    if (!searchData) return;
+    try {
+      setIsLoading(true);
+      setSearchResults([]);
+      setDateRange(undefined);
+      setIsSummarizing(false);
 
-    setSearchResults(searchData.results);
-    setShowModelNotice(false);
-    await handleChatSubmit(e, {
-      body: { searchContext: searchData.formattedResults || "" },
-    });
-    addQuery(input);
+      // If enhanced auto date is enabled, get date range
+      if (searchSettings.autoDate) {
+        const dateResponse = await fetch("deepsexa/api/parse-date", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: input,
+            previousQueries,
+          }),
+        });
+
+        if (dateResponse.ok) {
+          const dateData = await dateResponse.json();
+          if (dateData.dateRange) {
+            setDateRange(dateData.dateRange);
+            // Update search settings with date range
+            searchSettings.startPublishedDate = dateData.dateRange.startDate;
+            searchSettings.endPublishedDate = dateData.dateRange.endDate;
+          }
+        }
+      }
+
+      const searchData = await search({ 
+        query: input, 
+        autoDate: false // We handle auto date in the component now
+      }, previousQueries, searchSettings);
+      
+      if (!searchData) return;
+
+      // If custom model mode is enabled, we need to summarize the content
+      if (searchSettings.customModelMode) {
+        setIsSummarizing(true);
+        // Process each result for summarization
+        const summarizedResults = await Promise.all(
+          searchData.results.map(async (result: SearchResult) => {
+            if (!result.text) return result;
+
+            try {
+              const summaryResponse = await fetch("deepsexa/api/summarize/openai", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  text: result.text,
+                  query: input,
+                  previousQueries,
+                }),
+              });
+
+              if (summaryResponse.ok) {
+                const summaryData = await summaryResponse.json();
+                return {
+                  ...result,
+                  summary: summaryData.summary,
+                };
+              }
+            } catch (error) {
+              console.error("Summarization error:", error);
+            }
+            return result;
+          })
+        );
+        setIsSummarizing(false);
+        setSearchResults(summarizedResults);
+      } else {
+        setSearchResults(searchData.results);
+      }
+
+      setShowModelNotice(false);
+      await handleChatSubmit(e, {
+        body: { searchContext: searchData.formattedResults || "" },
+      });
+      addQuery(input);
+    } catch (error) {
+      console.error("Search error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -123,13 +199,17 @@ function ChatInterface() {
                 onToggleThinking={() => setIsThinkingExpanded(!isThinkingExpanded)}
               />
               
-              {message.role === 'user' && !isSearching && searchResults.length > 0 && (
+              {message.role === 'user' && (
                 <SearchResults
                   results={searchResults}
                   isSourcesExpanded={isSourcesExpanded}
                   onToggleSources={() => setIsSourcesExpanded(!isSourcesExpanded)}
                   isLLMLoading={isLLMLoading}
                   isLatestMessage={index === messages.length - 2}
+                  isSearching={isSearching}
+                  isSummarizing={isSummarizing}
+                  dateRange={dateRange}
+                  loadingDots={loadingDots}
                 />
               )}
             </div>
@@ -147,7 +227,7 @@ function ChatInterface() {
         input={input}
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
-        isSearching={isSearching}
+        isSearching={isLoading}
         loadingDots={loadingDots}
         showModelNotice={showModelNotice}
         messageCount={messages.filter(m => m.role !== 'system').length}

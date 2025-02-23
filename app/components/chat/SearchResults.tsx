@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { getAssetPath } from '../../utils';
 import { SearchResult } from '../../types';
-import { ThinkingSpinner } from '../LoadingStates';
+import { ThinkingSpinner, SearchStatus } from '../LoadingStates';
 
 interface SearchResultsProps {
   results: SearchResult[];
@@ -9,6 +9,13 @@ interface SearchResultsProps {
   onToggleSources: () => void;
   isLLMLoading: boolean;
   isLatestMessage: boolean;
+  isSearching: boolean;
+  isSummarizing: boolean;
+  dateRange?: {
+    startDate: string | null;
+    endDate: string | null;
+  };
+  loadingDots: string;
 }
 
 export function SearchResults({
@@ -16,9 +23,16 @@ export function SearchResults({
   isSourcesExpanded,
   onToggleSources,
   isLLMLoading,
-  isLatestMessage
+  isLatestMessage,
+  isSearching,
+  isSummarizing,
+  dateRange,
+  loadingDots
 }: SearchResultsProps) {
-  if (!results.length) return null;
+  // Show component if there are results OR if we're in a loading state
+  const shouldShow = results.length > 0 || isSearching || isSummarizing || dateRange;
+  
+  if (!shouldShow) return null;
 
   return (
     <div className="my-10 space-y-4">
@@ -40,7 +54,15 @@ export function SearchResults({
         </button>
       </div>
 
-      {isSourcesExpanded && (
+      {/* Always show status if we're in any loading state or have date range */}
+      <SearchStatus
+        isSearching={isSearching}
+        isSummarizing={isSummarizing}
+        dateRange={dateRange}
+        dots={loadingDots}
+      />
+
+      {isSourcesExpanded && results.length > 0 && (
         <div className="pl-4 relative">
           <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200"></div>
           <div className="space-y-2">
@@ -58,8 +80,25 @@ export function SearchResults({
                     />
                   )}
                 </a>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 -bottom-6 bg-gray-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10 pointer-events-none">
-                  {result.url}
+                {/* Content preview on hover */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 -bottom-2 translate-y-full bg-gray-800 text-white text-xs py-2 px-3 rounded max-w-xl z-10 pointer-events-none">
+                  <div className="font-medium mb-1">Content Preview:</div>
+                  {result.text && <div className="mb-2">{typeof result.text === 'string' ? result.text : 'Text content available'}</div>}
+                  {result.highlights && Array.isArray(result.highlights) && (
+                    <div>
+                      <div className="font-medium mb-1">Highlights:</div>
+                      {result.highlights.map((highlight, i) => (
+                        <div key={i} className="mb-1">• {highlight}</div>
+                      ))}
+                    </div>
+                  )}
+                  {result.summary && (
+                    <div>
+                      <div className="font-medium mb-1">Summary:</div>
+                      <div>{result.summary}</div>
+                    </div>
+                  )}
+                  <div className="mt-2 text-gray-300">{result.url}</div>
                 </div>
               </div>
             ))}

@@ -20,6 +20,9 @@ export const DEFAULT_SEARCH_SETTINGS: ExaSearchSettings = {
   highlights: false,
   summary: false,
 
+  // Enhanced Auto Date
+  autoDate: true,
+
   // Advanced Settings (Not Tested)
   useAutoprompt: true,
   includeDomains: [],

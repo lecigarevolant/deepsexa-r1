@@ -35,13 +35,7 @@ export function ChatInput({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-
-    const formData: SearchFormData = {
-      query: input.trim(),
-      autoDate
-    };
-
+    if (!input.trim() || isSearching) return;
     onSubmit(e);
   };
 
@@ -62,14 +56,16 @@ export function ChatInput({
                 onKeyDown={handleKeyDown}
                 placeholder="Ask something... (Ctrl+Enter to send)"
                 rows={1}
-                className="w-full p-3 pr-24 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--brand-default)] text-base resize-none overflow-hidden"
+                disabled={isSearching}
+                className="w-full p-3 pr-24 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--brand-default)] text-base resize-none overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
                 <Toggle
                   size="sm"
                   pressed={autoDate}
                   onPressedChange={setAutoDate}
-                  className="bg-transparent hover:bg-gray-100 data-[state=on]:bg-brand-default data-[state=on]:text-white"
+                  disabled={isSearching}
+                  className="bg-transparent hover:bg-gray-100 data-[state=on]:bg-brand-default data-[state=on]:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Auto-detect date range"
                 >
                   <CalendarClock className="h-4 w-4" />
@@ -79,13 +75,13 @@ export function ChatInput({
             <button 
               type="submit"
               disabled={!input.trim() || isSearching}
-              className="px-5 py-3 bg-[var(--brand-default)] text-white rounded-md hover:bg-[var(--brand-muted)] font-medium w-[120px] h-[46px] flex items-center justify-center"
+              className="px-5 py-3 bg-[var(--brand-default)] text-white rounded-md hover:bg-[var(--brand-muted)] disabled:opacity-50 disabled:cursor-not-allowed font-medium w-[120px] h-[46px] flex items-center justify-center"
             >
               {isSearching ? <SearchingSpinner dots={loadingDots} /> : 'Search'}
             </button>
           </div>
           
-          {showModelNotice && messageCount === 0 && (
+          {messageCount === 0 && showModelNotice && (
             <p className="text-xs md:text-sm text-gray-600 mt-8">
               Using Perplexity AI r1-1776 model
             </p>

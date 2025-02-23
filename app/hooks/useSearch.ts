@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { SearchFormData } from "@/app/types/search";
-import { ExaSearchSettings } from "@/app/api/exawebsearch/route";
+import { ExaSearchSettings } from "@/app/types";
 import { DEFAULT_SEARCH_SETTINGS } from "@/app/constants/api";
 
 export function useSearch() {
@@ -9,49 +9,30 @@ export function useSearch() {
 
   const search = async (
     formData: SearchFormData,
-    previousQueries: string[] = []
+    previousQueries: string[] = [],
+    settings: ExaSearchSettings = DEFAULT_SEARCH_SETTINGS
   ) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // If autoDate is enabled, get date range from OpenAI
-      let settings = { ...DEFAULT_SEARCH_SETTINGS };
-
-      if (formData.autoDate) {
-        const dateResponse = await fetch("deepsexa/api/parse-date", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: formData.query,
-            previousQueries,
-          }),
-        });
-
-        if (!dateResponse.ok) {
-          throw new Error("Failed to parse date range");
-        }
-
-        const dateRange = await dateResponse.json();
-
-        // Apply the date range to settings if dates were detected
-        if (dateRange.dateRange.startDate || dateRange.dateRange.endDate) {
-          settings = {
-            ...settings,
-            startPublishedDate: dateRange.dateRange.startDate,
-            endPublishedDate: dateRange.dateRange.endDate,
-          };
-        }
-      }
-
-      // Perform the search with the updated settings
+      // Perform the search with the provided settings
       const searchResponse = await fetch("deepsexa/api/exawebsearch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: formData.query,
           previousQueries,
-          settings,
+          settings: {
+            ...settings,
+            // If using custom model mode, we need text content
+            text: settings.customModelMode
+              ? {
+                  maxCharacters: 10000,
+                  includeHtmlTags: false,
+                }
+              : settings.text,
+          },
         }),
       });
 

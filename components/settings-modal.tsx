@@ -77,6 +77,21 @@ export default function SettingsModal({ settings, onSave, onClose }: SettingsMod
             </select>
           </div>
 
+          <div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.autoDate ?? true}
+                onChange={e => setFormData(prev => ({ ...prev, autoDate: e.target.checked }))}
+                id="autoDate"
+              />
+              <label htmlFor="autoDate" className="text-sm">Enhanced Auto Date (OpenAI Date Detection)</label>
+            </div>
+            <p className="text-xs text-gray-500 mt-1 ml-6">
+              Uses OpenAI to intelligently detect date ranges from your query. If disabled, uses Exa's built-in date detection.
+            </p>
+          </div>
+
           {/* Content Settings */}
           <div className="space-y-4 mt-4 border-t pt-4">
             <h3 className="font-medium">Content Settings</h3>

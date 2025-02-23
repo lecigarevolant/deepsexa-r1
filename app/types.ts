@@ -2,16 +2,19 @@
  * Common type definitions for the application
  */
 
-import type { 
+import type {
   TextContentsOptions,
   HighlightsContentsOptions,
-  SummaryContentsOptions
-} from 'exa-js';
+  SummaryContentsOptions,
+} from "exa-js";
 
 export interface SearchResult {
   url: string;
   title: string;
   favicon?: string;
+  text?: string | TextContentsOptions;
+  highlights?: string[];
+  summary?: string;
 }
 
 export interface ExaSearchSettings {
@@ -19,7 +22,7 @@ export interface ExaSearchSettings {
   type: "auto" | "keyword" | "neural";
   numResults: number;
   livecrawl?: "always" | "fallback" | "never";
-  
+
   // Content options
   text?: TextContentsOptions | boolean;
   highlights?: HighlightsContentsOptions | boolean;
@@ -28,15 +31,24 @@ export interface ExaSearchSettings {
   // Custom Model Mode
   customModelMode?: boolean;
 
+  // Enhanced Auto Date
+  autoDate?: boolean;
+
   // Advanced Settings (Not Tested)
   useAutoprompt?: boolean;
   includeDomains?: string[];
   excludeDomains?: string[];
-  startPublishedDate?: string;  // ISO 8601
-  endPublishedDate?: string;    // ISO 8601
-  startCrawlDate?: string;      // ISO 8601
-  endCrawlDate?: string;        // ISO 8601
-  category?: "research_paper" | "news" | "blog" | "social_media" | "discussion" | "other";
+  startPublishedDate?: string; // ISO 8601
+  endPublishedDate?: string; // ISO 8601
+  startCrawlDate?: string; // ISO 8601
+  endCrawlDate?: string; // ISO 8601
+  category?:
+    | "research_paper"
+    | "news"
+    | "blog"
+    | "social_media"
+    | "discussion"
+    | "other";
   highlightQuery?: string;
 }
 
@@ -52,7 +64,7 @@ export interface WebSearchError {
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
@@ -62,7 +74,7 @@ export interface ChatRequest {
 
 export interface ChatResponse {
   id: string;
-  role: 'assistant';
+  role: "assistant";
   content: string;
 }
 
@@ -71,8 +83,8 @@ export interface ChatError {
 }
 
 // Re-export types from exa-js for convenience
-export type { 
+export type {
   TextContentsOptions,
   HighlightsContentsOptions,
-  SummaryContentsOptions
-}; 
+  SummaryContentsOptions,
+};

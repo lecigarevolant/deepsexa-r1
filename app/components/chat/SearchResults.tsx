@@ -102,12 +102,12 @@ export function SearchResults({
                   )}
                 </a>
                 {/* Content preview on hover, shows content based on settings */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 -bottom-2 translate-y-full bg-gray-800 text-white text-xs py-2 px-3 rounded max-w-xl z-10 pointer-events-none">
-                  <div className="font-medium mb-1">Content Preview:</div>
-                  <div className="mb-2 whitespace-pre-wrap">
+                <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 absolute left-0 -bottom-2 translate-y-full bg-white border border-gray-200 shadow-lg text-gray-900 text-xs py-3 px-4 rounded-lg max-w-xl z-10 pointer-events-none">
+                  <div className="font-medium mb-2 text-[var(--brand-default)]">Content Preview</div>
+                  <div className="mb-3 whitespace-pre-wrap leading-relaxed">
                     {renderPreviewContent(result)}
                   </div>
-                  <div className="mt-2 text-gray-300">{result.url}</div>
+                  <div className="mt-2 text-gray-500 text-[10px] border-t pt-2 border-gray-100">{result.url}</div>
                 </div>
               </div>
             ))}

@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { getAssetPath } from '../../utils';
-import { SearchResult } from '../../types';
+import { SearchResult, ExaSearchSettings } from '../../types';
 import { ThinkingSpinner, SearchStatus } from '../LoadingStates';
 
 interface SearchResultsProps {
@@ -16,6 +16,7 @@ interface SearchResultsProps {
     endDate: string | null;
   };
   loadingDots: string;
+  searchSettings: ExaSearchSettings;
 }
 
 export function SearchResults({
@@ -27,12 +28,32 @@ export function SearchResults({
   isSearching,
   isSummarizing,
   dateRange,
-  loadingDots
+  loadingDots,
+  searchSettings
 }: SearchResultsProps) {
   // Show component if there are results OR if we're in a loading state
   const shouldShow = results.length > 0 || isSearching || isSummarizing || dateRange;
   
   if (!shouldShow) return null;
+
+  const renderPreviewContent = (result: SearchResult) => {
+    const settings = searchSettings || { customModelMode: false, text: true, highlights: false, summary: false };
+    // If using custom model mode, show the OpenAI summary
+    if (settings.customModelMode) {
+      return result.summary ? result.summary : 'No summary available';
+    } else {
+      // For non-custom mode, only one of these should be enabled per settings modal radio buttons
+      if (settings.text) {
+        return result.text && typeof result.text === 'string' ? result.text : 'Text content available';
+      } else if (settings.highlights) {
+        return result.highlights && Array.isArray(result.highlights) ? result.highlights.join('\n') : 'No highlights available';
+      } else if (settings.summary) {
+        return result.summary ? result.summary : 'No summary available';
+      } else {
+        return 'No content available';
+      }
+    }
+  };
 
   return (
     <div className="my-10 space-y-4">
@@ -80,24 +101,12 @@ export function SearchResults({
                     />
                   )}
                 </a>
-                {/* Content preview on hover */}
+                {/* Content preview on hover, shows content based on settings */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 -bottom-2 translate-y-full bg-gray-800 text-white text-xs py-2 px-3 rounded max-w-xl z-10 pointer-events-none">
                   <div className="font-medium mb-1">Content Preview:</div>
-                  {result.text && <div className="mb-2">{typeof result.text === 'string' ? result.text : 'Text content available'}</div>}
-                  {result.highlights && Array.isArray(result.highlights) && (
-                    <div>
-                      <div className="font-medium mb-1">Highlights:</div>
-                      {result.highlights.map((highlight, i) => (
-                        <div key={i} className="mb-1">• {highlight}</div>
-                      ))}
-                    </div>
-                  )}
-                  {result.summary && (
-                    <div>
-                      <div className="font-medium mb-1">Summary:</div>
-                      <div>{result.summary}</div>
-                    </div>
-                  )}
+                  <div className="mb-2 whitespace-pre-wrap">
+                    {renderPreviewContent(result)}
+                  </div>
                   <div className="mt-2 text-gray-300">{result.url}</div>
                 </div>
               </div>

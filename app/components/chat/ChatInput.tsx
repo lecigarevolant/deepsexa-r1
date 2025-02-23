@@ -13,6 +13,7 @@ interface ChatInputProps {
   loadingDots: string;
   showModelNotice: boolean;
   messageCount: number;
+  searchStatus: string;
 }
 
 export function ChatInput({
@@ -22,7 +23,8 @@ export function ChatInput({
   isSearching,
   loadingDots,
   showModelNotice,
-  messageCount
+  messageCount,
+  searchStatus
 }: ChatInputProps) {
   const [autoDate, setAutoDate] = useState(false);
   const { textareaRef, handleTextareaChange } = useAutoResizeTextarea();
@@ -51,7 +53,7 @@ export function ChatInput({
             <div className="flex-1 relative">
               <textarea
                 ref={textareaRef}
-                value={input}
+                value={isSearching ? searchStatus || 'Searching...' : input}
                 onChange={(e) => handleTextareaChange(e, onInputChange)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask something... (Ctrl+Enter to send)"

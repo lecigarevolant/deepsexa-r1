@@ -13,6 +13,7 @@ import SettingsModal from '@/components/settings-modal';
 import { SearchFormData } from './types/search';
 import { ExaSearchSettings, SearchResult } from './types';
 import { DEFAULT_SEARCH_SETTINGS } from './constants/api';
+import { Message } from 'ai';
 
 /**
  * Main chat interface component
@@ -62,8 +63,32 @@ function ChatInterface() {
       setDateRange(undefined);
       setIsSummarizing(false);
 
+      // Add initial user message
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: input.trim()
+      };
+      
+      // Add initial feedback message
+      const feedbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Searching web...'
+      };
+      
+      setMessages([...messages, userMessage, feedbackMessage]);
+
       // If enhanced auto date is enabled, get date range
       if (searchSettings.autoDate) {
+        setMessages(prev => {
+          const lastMessage = prev[prev.length - 1];
+          return [...prev.slice(0, -1), {
+            ...lastMessage,
+            content: 'Analyzing date context in query...'
+          }];
+        });
+
         const dateResponse = await fetch("deepsexa/api/parse-date", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -80,9 +105,34 @@ function ChatInterface() {
             // Update search settings with date range
             searchSettings.startPublishedDate = dateData.dateRange.startDate;
             searchSettings.endPublishedDate = dateData.dateRange.endDate;
+
+            // Update feedback message
+            setMessages(prev => {
+              const lastMessage = prev[prev.length - 1];
+              const dateText = dateData.dateRange.startDate && dateData.dateRange.endDate
+                ? `between ${dateData.dateRange.startDate} and ${dateData.dateRange.endDate}`
+                : dateData.dateRange.startDate
+                  ? `from ${dateData.dateRange.startDate}`
+                  : dateData.dateRange.endDate
+                    ? `until ${dateData.dateRange.endDate}`
+                    : '';
+              return [...prev.slice(0, -1), {
+                ...lastMessage,
+                content: `Detected date range: ${dateText}\nSearching web...`
+              }];
+            });
           }
         }
       }
+
+      // Update feedback message for search
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1];
+        return [...prev.slice(0, -1), {
+          ...lastMessage,
+          content: 'Searching web for relevant content...'
+        }];
+      });
 
       const searchData = await search({ 
         query: input, 
@@ -94,6 +144,16 @@ function ChatInterface() {
       // If custom model mode is enabled, we need to summarize the content
       if (searchSettings.customModelMode) {
         setIsSummarizing(true);
+        
+        // Update feedback message for summarization
+        setMessages(prev => {
+          const lastMessage = prev[prev.length - 1];
+          return [...prev.slice(0, -1), {
+            ...lastMessage,
+            content: `Found ${searchData.results.length} results\nSummarizing content using OpenAI...`
+          }];
+        });
+
         // Process each result for summarization
         const summarizedResults = await Promise.all(
           searchData.results.map(async (result: SearchResult) => {
@@ -125,8 +185,26 @@ function ChatInterface() {
         );
         setIsSummarizing(false);
         setSearchResults(summarizedResults);
+
+        // Update feedback message for LLM
+        setMessages(prev => {
+          const lastMessage = prev[prev.length - 1];
+          return [...prev.slice(0, -1), {
+            ...lastMessage,
+            content: 'Content summarized. Generating response with DeepSeek...'
+          }];
+        });
       } else {
         setSearchResults(searchData.results);
+        
+        // Update feedback message for LLM
+        setMessages(prev => {
+          const lastMessage = prev[prev.length - 1];
+          return [...prev.slice(0, -1), {
+            ...lastMessage,
+            content: `Found ${searchData.results.length} results. Generating response with DeepSeek...`
+          }];
+        });
       }
 
       setShowModelNotice(false);
@@ -136,6 +214,17 @@ function ChatInterface() {
       addQuery(input);
     } catch (error) {
       console.error("Search error:", error);
+      // Add error message
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1];
+        if (lastMessage?.role === 'assistant') {
+          return [...prev.slice(0, -1), {
+            ...lastMessage,
+            content: 'Sorry, an error occurred while searching. Please try again.'
+          }];
+        }
+        return prev;
+      });
     } finally {
       setIsLoading(false);
     }
